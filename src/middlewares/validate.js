@@ -4,6 +4,16 @@ const { ValidationError } = require('../errors/httpErrors');
 
 const SOURCES = ['body', 'query', 'params'];
 
+function assignValidated(req, source, value) {
+  const target = req[source];
+  if (target && typeof target === 'object' && !Array.isArray(target)) {
+    for (const key of Object.keys(target)) delete target[key];
+    Object.assign(target, value);
+    return;
+  }
+  req[source] = value;
+}
+
 function validate(schemas) {
   return (req, _res, next) => {
     const details = [];
@@ -25,7 +35,7 @@ function validate(schemas) {
         continue;
       }
 
-      req[source] = value;
+      assignValidated(req, source, value);
     }
 
     if (details.length > 0) return next(new ValidationError('Invalid request payload', details));
