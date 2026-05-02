@@ -29,9 +29,27 @@ const objectIdSchema = Joi.string()
   .pattern(/^[a-f\d]{24}$/i)
   .messages({ 'string.pattern.base': 'Invalid id format' });
 
-const addressSchema = Joi.object({
+const addressObjectSchema = Joi.object({
   city: Joi.string().trim().min(2).max(80).required(),
   country: Joi.string().trim().min(2).max(80).required(),
 });
+
+const addressSchema = Joi.alternatives()
+  .try(
+    addressObjectSchema,
+    Joi.string()
+      .trim()
+      .pattern(/^[^,]{2,80},[^,]{2,80}$/)
+      .custom((value) => {
+        const [city, country] = value.split(',').map((s) => s.trim());
+        return { city, country };
+      }, 'address string to object')
+      .messages({
+        'string.pattern.base': 'Address must be in the format "city,country"',
+      })
+  )
+  .messages({
+    'alternatives.match': 'Address must be either an object with city and country, or the string "city,country"',
+  });
 
 module.exports = { phoneSchema, passwordSchema, objectIdSchema, addressSchema };
